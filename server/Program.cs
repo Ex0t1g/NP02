@@ -1,5 +1,8 @@
-﻿using System.Net.Sockets;
+using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Net;
+using System.Net.Sockets;
 using System.Text;
 
 namespace server
@@ -7,6 +10,7 @@ namespace server
     public class Program
     {
         private static Dictionary<string, List<string>> streets = new();
+
         static void Main(string[] args)
         {
             LoadStreets("streets.txt");
@@ -43,15 +47,17 @@ namespace server
             {
                 using TcpClient client = listener.AcceptTcpClient();
                 Console.WriteLine("Подключен клиент.");
-                using NetworkStream stream = client.GetStream();
+
                 byte[] buffer = new byte[256];
-                int bytesRead = stream.Read(buffer, 0, buffer.Length);
+                int bytesRead = client.Client.Receive(buffer);
+
                 string postcode = Encoding.UTF8.GetString(buffer, 0, bytesRead).Trim();
                 string response = HandleRequest(postcode);
                 byte[] responseData = Encoding.UTF8.GetBytes(response);
-                stream.Write(responseData, 0, responseData.Length);
+                client.Client.Send(responseData);
             }
         }
+
         private static string HandleRequest(string postcode)
         {
             if (streets.ContainsKey(postcode))
